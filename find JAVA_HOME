@@ -1,0 +1,29 @@
+aab@aab-ubuntu:~$ type -p java
+/usr/bin/java
+aab@aab-ubuntu:~$ readlink -f /usr/bin/java
+/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+aab@aab-ubuntu:~$ dirname /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+/usr/lib/jvm/java-8-openjdk-amd64/jre/bin
+aab@aab-ubuntu:~$ dirname /usr/lib/jvm/java-8-openjdk-amd64/jre/bin
+/usr/lib/jvm/java-8-openjdk-amd64/jre
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+aab@aab-ubuntu:~$ echo $JAVA_HOME
+/usr/lib/jvm/java-8-openjdk-amd64/jre/
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+How to set environment variables as follows
+
+Edit the system Path file /etc/profile
+
+sudo gedit /etc/profile
+Add following lines in end
+
+JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre
+PATH=$PATH:$HOME/bin:$JAVA_HOME/bin
+export JAVA_HOME
+export JRE_HOME
+export PATH
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Then Log out and Log in ubuntu for setting up the paths...
+
