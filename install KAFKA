@@ -1,3 +1,8 @@
+#In this article, We have performed ,How to Install Apache Kafka on Ubuntu 20.04 LTS and also covered creating systemd unit file for zookeeper and kafka service, #start zookeeper, start kafka, create a topic, delete topic, start kafka and zookeeper service.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 1: Install JAVA & KAFKA
+
 $ sudo apt-get update
 $ sudo apt install openjdk-8-jdk
 $ java -version
@@ -6,3 +11,165 @@ $ sudo wget https://downloads.apache.org/kafka/2.4.1/kafka_2.13-2.4.1.tgz
 #Now to un-tar the archive file and move to another location:
 $ sudo tar xzf kafka_2.13-2.4.1.tgz
 $ sudo mv kafka_2.13-2.4.1 /opt/kafka
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 2: Creating zookeeper and Kafka Systemd Unit Files
+Create the systemd unit file for zookeeper service
+
+$ sudo vi /etc/systemd/system/zookeeper.service
+
+#########paste the below lines
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[Unit]
+Description=Apache Zookeeper service
+Documentation=http://zookeeper.apache.org
+Requires=network.target remote-fs.target
+After=network.target remote-fs.target
+
+[Service]
+Type=simple
+ExecStart=/opt/kafka/bin/zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties
+ExecStop=/opt/kafka/bin/zookeeper-server-stop.sh
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Reload the daemon to take effect
+
+$ sudo systemctl daemon-reload
+Create the systemd unit file for kafka service
+
+$ sudo vi /etc/systemd/system/kafka.service
+#######paste the below lines
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+[Unit]
+Description=Apache Kafka Service
+Documentation=http://kafka.apache.org/documentation.html
+Requires=zookeeper.service
+
+[Service]
+Type=simple
+Environment="JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre/"          #### REPLACE with your JAVA_HOME
+ExecStart=/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties
+ExecStop=/opt/kafka/bin/kafka-server-stop.sh
+
+[Install]
+WantedBy=multi-user.target
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Note: Modify the value of JAVA_HOME value,If the path of your Java installation is different.
+
+Reload the daemon to take effect
+
+$ sudo systemctl daemon-reload
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 3: Start ZooKeeper and Kafka Service
+Lets start zookeeper service first
+
+$ sudo service zookeeper start
+Start the kafka service
+
+$ sudo service kafka start
+Check the status of  zookeeper service if it started
+
+$ sudo service zookeper status
+OUTPUT:
+
+aab@aab-ubuntu:~$ sudo service zookeeper status
+● zookeeper.service - Apache Zookeeper service
+     Loaded: loaded (/etc/systemd/system/zookeeper.service; disabled; vendor preset: enabled)
+     Active: active (running) since Sun 2020-09-13 17:45:47 CDT; 4h 21min ago
+       Docs: http://zookeeper.apache.org
+   Main PID: 22950 (java)
+      Tasks: 58 (limit: 18804)
+     Memory: 85.7M
+     CGroup: /system.slice/zookeeper.service
+             └─22950 java -Xmx512M -Xms512M -server -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent -Djava.awt.headless=true -Xloggc:/opt/kafk>
+
+$ sudo service kafka status
+OUTPUT:
+
+
+ab@aab-ubuntu:~$ sudo service kafka status
+● kafka.service - Apache Kafka Service
+     Loaded: loaded (/etc/systemd/system/kafka.service; disabled; vendor preset: enabled)
+     Active: active (running) since Sun 2020-09-13 18:01:56 CDT; 4h 5min ago
+       Docs: http://kafka.apache.org/documentation.html
+   Main PID: 27059 (java)
+      Tasks: 81 (limit: 18804)
+     Memory: 316.9M
+     CGroup: /system.slice/kafka.service
+             └─27059 /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -Xmx1G -Xms1G -server -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:+ExplicitGCInvokesConcurrent -Dja>
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 4: Creating  Topic in Kafka
+Now we will create a topic named as “first_topic” with a single replicaton-factor and partition:
+
+aab@aab-ubuntu:~$ cd /opt/kafka/
+>aab@aab-ubuntu:/opt/kafka$ sudo bin/kaftopics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic first_topic
+WARNING: Due to limitations in metric names, topics with a period ('.') or underscore ('_') could collide. To avoid issues it is best to use either, but not both.
+Created topic first_topic.
+aab@aab-ubuntu:/opt/kafka$ sudo bin/kafka-topics.sh --list --zookeeper localhost:2181
+first_topic
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 5: To send some messages
+aab@aab-ubuntu:/opt/kafka$ sudo bin/kafka-console-producer.sh --broker-list localhost:9092 --topic first_topic
+>hello 
+>this
+>is
+>my 
+>first 
+>kafka
+>message
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 6: Start consumer in a different TERMINAL
+Using below command we can see the list of messages:
+aab@aab-ubuntu:~$ cd /opt/kafka/
+aab@aab-ubuntu:/opt/kafka$ sudo bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic first_topic --from-beginning
+hello 
+this
+is
+my 
+first 
+kafka
+message
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 7: To Delete any Topic
+If you want to delete any created  topic use below command:
+
+aab@aab-ubuntu:~$ cd /opt/kafka/
+aab@aab-ubuntu:/opt/kafka$ sudo bin/kafka-topics.sh --delete --bootstrap-server localhost:9092 --topic first_topic
+aab@aab-ubuntu:/opt/kafka$ sudo bin/kaftopics.sh --list --zookeeper localhost:2181pic
+DevOps
+__consumer_offsets
+
+### topic : first_topic is deleted
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 8: To Connect Kafka from remote machine
+To connect, create Topic and send messages from remote server. Please follow below steps.
+
+Go to the below path:
+
+cd /opt/kafka/config
+Now look for server.properties and make some configuration changes:
+
+sudo vi server.properties
+In this properties file uncomment as mentioned  below:
+
+listeners=PLAINTEXT://:9092
+advertised.listeners=PLAINTEXT://<HOST IP>:9092
+
+
+
