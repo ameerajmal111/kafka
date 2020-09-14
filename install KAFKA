@@ -1,0 +1,8 @@
+$ sudo apt-get update
+$ sudo apt install openjdk-8-jdk
+$ java -version
+INSTALL APACHE KAFKA ON UBUNTU 20.04
+$ sudo wget https://downloads.apache.org/kafka/2.4.1/kafka_2.13-2.4.1.tgz
+#Now to un-tar the archive file and move to another location:
+$ sudo tar xzf kafka_2.13-2.4.1.tgz
+$ sudo mv kafka_2.13-2.4.1 /opt/kafka
