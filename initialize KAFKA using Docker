@@ -1,2 +1,179 @@
 Prerequisites:
-follow how to install docker on Ubuntu as mentioned in 
+follow how to install docker on Ubuntu as mentioned in "https://github.com/ameerajmal111/kafka/blob/master/Install%20Docker%20on%20Ubuntu"
+
+Step1: Initialize project:
+$ mkdir console-consumer-produer-basic && cd console-consumer-produer-basic
+
+
+Step2: docker-compose.yml
+#Next, create the following docker-compose.yml file to obtain Confluent Platform.
+paste below lines in docker-compose.yml
+=======================================================================================================================================
+---
+version: '2'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.5.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-kafka:5.5.0
+    hostname: broker
+    container_name: broker
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+=======================================================================================================================================      
+
+#Now launch Confluent Platform by running:
+
+$ docker-compose up -d
+
+Step3: Create a topic
+Your first step is to create a topic to produce to and consume from. Use the following command to create the topic:
+
+$ sudo docker-compose exec broker kafka-topics --create --topic first-d-topic --bootstrap-server broker:9092 --replication-factor 1 --partitions 1
+Created topic first-d-topic.
+
+Step4: Open 2 terminals next to each other.
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+on FIRST terminal(PRODUCER) produce first kafka messages
+
+aab@aab-ubuntu:~$ cd /opt/kafka/console-consumer-produer-basic/
+aab@aab-ubuntu:/opt/kafka/console-consumer-produer-basic$ sudo docker-compose exec broker bash
+[sudo] password for aab: 
+root@broker:/# kafka-console-producer --topic example-topic --broker-list broker:9092
+>this  
+>is 
+>my
+>kafka
+>producer 
+>message
+>on 
+>docker
+>^Croot@broker:/# kafka-console-producer --topic example-topic --broker-list bro:9092
+>this 
+>is
+>my
+>second
+>producer
+>message
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+on SECOND terminal(CONSUMER) consume messages
+
+$ cd /opt/kafka/console-consumer-produer-basic/
+$ sudo docker-compose exec broker bash
+root@broker:/# kafka-console-consumer --topic first-d-topic --bootstrap-server broker:9092 
+[2020-09-14 19:21:48,988] WARN [Consumer clientId=consumer-console-consumer-66579-1, groupId=console-consumer-66579] Error while fetching metadata with correlation id 2 : {example-topic=LEADER_NOT_AVAILABLE} (org.apache.kafka.clients.NetworkClient)
+this 
+is 
+my
+kafka
+producer 
+message
+on 
+docker
+this 
+is
+my
+second
+producer
+message
+^CProcessed a total of 14 messages
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Step5: read all messages (on CONSUMER) consume all messages
+root@broker:/# kafka-console-consumer --topic example-topic --bootstrap-server broker:9092  --from-beginning
+this 
+is 
+my
+kafka
+producer 
+message
+on 
+docker
+this 
+is
+my
+second
+producer
+message
+hello
+how
+are
+you
+am
+fine
+^CProcessed a total of 20 messages
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Step6: Produce key:value pairs (on PRODUCER)
+
+>root@broker:/# kafka-console-producer --topic example-topic --broker-list bro:9092\
+>   --property parse.key=true\
+>   --property key.separator=":"
+>key1:hello
+>key1:how
+>key1:are
+>key1:you
+>key2:am
+>key2:fine
+>^Croot@broker:/# 
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Step7: COnsume key:value pairs (on CONSUMER)
+
+root@broker:/# kafka-console-consumer --topic example-topic --bootstrap-server broker:9092 \
+>  --from-beginning \
+>  --property print.key=true \
+>  --property key.separator="-"
+null-this 
+null-is 
+null-my
+null-kafka
+null-producer 
+null-message
+null-on 
+null-docker
+null-this 
+null-is
+null-my
+null-second
+null-producer
+null-message
+key1-hello
+key1-how
+key1-are
+key1-you
+key2-am
+key2-fine
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Step8: Shutdown 
+Go back to your open Terminals and stop any console producers and consumers with a CTRL+C 
+close the containter shells with a CTRL+D command.
+
+Then you can shut down the stack by running:
+
+docker-compose down
+
+aab@aab-ubuntu:/opt/kafka/console-consumer-produer-basic$ sudo docker-compose down
+[sudo] password for aab: 
+Removing broker    ... done
+Removing zookeeper ... done
+Removing network console-consumer-produer-basic_default
+
